@@ -10,7 +10,7 @@ deploymentTarget = "cloudrun"
 run = ["sh", "-c", "npm run dev"]
 
 [workflows]
-runButton = "Start application"
+runButton = "Project"
 
 [[workflows.workflow]]
 name = "Project"
