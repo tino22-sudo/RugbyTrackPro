@@ -4,7 +4,9 @@ import { Router } from "express";
 import { storage } from "./storage";
 import { z } from "zod";
 import {
+  insertTeamSchema,
   insertPlayerSchema,
+  insertFixtureSchema,
   insertGameSchema,
   insertGamePlayerSchema,
   insertStatSchema,
@@ -14,6 +16,198 @@ import {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create router for API routes
   const apiRouter = Router();
+
+  // Teams API
+  apiRouter.get("/teams", async (req: Request, res: Response) => {
+    try {
+      const teams = await storage.getTeams();
+      res.json(teams);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch teams" });
+    }
+  });
+
+  apiRouter.get("/teams/:id", async (req: Request, res: Response) => {
+    try {
+      const id = Number(req.params.id);
+      const team = await storage.getTeam(id);
+      
+      if (!team) {
+        return res.status(404).json({ message: "Team not found" });
+      }
+      
+      res.json(team);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch team" });
+    }
+  });
+
+  apiRouter.post("/teams", async (req: Request, res: Response) => {
+    try {
+      const validation = insertTeamSchema.safeParse(req.body);
+      
+      if (!validation.success) {
+        return res.status(400).json({ message: "Invalid team data", errors: validation.error.format() });
+      }
+      
+      const team = await storage.createTeam(validation.data);
+      res.status(201).json(team);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create team" });
+    }
+  });
+
+  apiRouter.put("/teams/:id", async (req: Request, res: Response) => {
+    try {
+      const id = Number(req.params.id);
+      const validation = insertTeamSchema.partial().safeParse(req.body);
+      
+      if (!validation.success) {
+        return res.status(400).json({ message: "Invalid team data", errors: validation.error.format() });
+      }
+      
+      const team = await storage.updateTeam(id, validation.data);
+      
+      if (!team) {
+        return res.status(404).json({ message: "Team not found" });
+      }
+      
+      res.json(team);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update team" });
+    }
+  });
+
+  apiRouter.delete("/teams/:id", async (req: Request, res: Response) => {
+    try {
+      const id = Number(req.params.id);
+      const success = await storage.deleteTeam(id);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Team not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete team" });
+    }
+  });
+
+  apiRouter.get("/teams/:id/players", async (req: Request, res: Response) => {
+    try {
+      const teamId = Number(req.params.id);
+      const players = await storage.getPlayersByTeam(teamId);
+      res.json(players);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch team players" });
+    }
+  });
+
+  apiRouter.get("/teams/:id/fixtures", async (req: Request, res: Response) => {
+    try {
+      const teamId = Number(req.params.id);
+      const fixtures = await storage.getTeamFixtures(teamId);
+      res.json(fixtures);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch team fixtures" });
+    }
+  });
+
+  apiRouter.get("/teams/:id/games", async (req: Request, res: Response) => {
+    try {
+      const teamId = Number(req.params.id);
+      const games = await storage.getTeamGames(teamId);
+      res.json(games);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch team games" });
+    }
+  });
+
+  // Fixtures API
+  apiRouter.get("/fixtures", async (req: Request, res: Response) => {
+    try {
+      const fixtures = await storage.getFixtures();
+      res.json(fixtures);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch fixtures" });
+    }
+  });
+
+  apiRouter.get("/fixtures/:id", async (req: Request, res: Response) => {
+    try {
+      const id = Number(req.params.id);
+      const fixture = await storage.getFixture(id);
+      
+      if (!fixture) {
+        return res.status(404).json({ message: "Fixture not found" });
+      }
+      
+      res.json(fixture);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch fixture" });
+    }
+  });
+
+  apiRouter.post("/fixtures", async (req: Request, res: Response) => {
+    try {
+      // Create a custom validation schema that handles the date as a string
+      const fixtureCreateSchema = z.object({
+        teamId: z.number(),
+        opponent: z.string(),
+        location: z.string(),
+        date: z.string().transform(val => new Date(val)),
+        isHome: z.boolean().optional(),
+        notes: z.string().optional()
+      });
+      
+      const validation = fixtureCreateSchema.safeParse(req.body);
+      
+      if (!validation.success) {
+        return res.status(400).json({ message: "Invalid fixture data", errors: validation.error.format() });
+      }
+      
+      const fixture = await storage.createFixture(validation.data);
+      res.status(201).json(fixture);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create fixture" });
+    }
+  });
+
+  apiRouter.put("/fixtures/:id", async (req: Request, res: Response) => {
+    try {
+      const id = Number(req.params.id);
+      const validation = insertFixtureSchema.partial().safeParse(req.body);
+      
+      if (!validation.success) {
+        return res.status(400).json({ message: "Invalid fixture data", errors: validation.error.format() });
+      }
+      
+      const fixture = await storage.updateFixture(id, validation.data);
+      
+      if (!fixture) {
+        return res.status(404).json({ message: "Fixture not found" });
+      }
+      
+      res.json(fixture);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update fixture" });
+    }
+  });
+
+  apiRouter.delete("/fixtures/:id", async (req: Request, res: Response) => {
+    try {
+      const id = Number(req.params.id);
+      const success = await storage.deleteFixture(id);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Fixture not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete fixture" });
+    }
+  });
 
   // Players API
   apiRouter.get("/players", async (req: Request, res: Response) => {

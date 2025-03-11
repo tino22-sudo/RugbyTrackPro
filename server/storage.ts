@@ -2,6 +2,12 @@ import {
   players, 
   type Player, 
   type InsertPlayer,
+  teams,
+  type Team,
+  type InsertTeam,
+  fixtures,
+  type Fixture,
+  type InsertFixture,
   games,
   type Game,
   type InsertGame,
@@ -22,16 +28,33 @@ import {
 // modify the interface with any CRUD methods
 // you might need
 export interface IStorage {
+  // Team methods
+  getTeam(id: number): Promise<Team | undefined>;
+  getTeams(): Promise<Team[]>;
+  createTeam(team: InsertTeam): Promise<Team>;
+  updateTeam(id: number, team: Partial<InsertTeam>): Promise<Team | undefined>;
+  deleteTeam(id: number): Promise<boolean>;
+  
   // Player methods
   getPlayer(id: number): Promise<Player | undefined>;
   getPlayers(): Promise<Player[]>;
+  getPlayersByTeam(teamId: number): Promise<Player[]>;
   createPlayer(player: InsertPlayer): Promise<Player>;
   updatePlayer(id: number, player: Partial<InsertPlayer>): Promise<Player | undefined>;
   deletePlayer(id: number): Promise<boolean>;
   
+  // Fixture methods
+  getFixture(id: number): Promise<Fixture | undefined>;
+  getFixtures(): Promise<Fixture[]>;
+  getTeamFixtures(teamId: number): Promise<Fixture[]>;
+  createFixture(fixture: InsertFixture): Promise<Fixture>;
+  updateFixture(id: number, fixture: Partial<InsertFixture>): Promise<Fixture | undefined>;
+  deleteFixture(id: number): Promise<boolean>;
+  
   // Game methods
   getGame(id: number): Promise<Game | undefined>;
   getGames(): Promise<Game[]>;
+  getTeamGames(teamId: number): Promise<Game[]>;
   createGame(game: InsertGame): Promise<Game>;
   updateGame(id: number, game: Partial<InsertGame>): Promise<Game | undefined>;
   completeGame(id: number, homeScore: number, awayScore: number, playerOfMatchId?: number, playerOfMatchComment?: string): Promise<Game | undefined>;
@@ -67,14 +90,18 @@ export interface IStorage {
 }
 
 export class MemStorage implements IStorage {
+  private teams: Map<number, Team>;
   private players: Map<number, Player>;
+  private fixtures: Map<number, Fixture>;
   private games: Map<number, Game>;
   private gamePlayers: Map<number, GamePlayer>;
   private stats: Map<number, Stat>;
   private statTypes: Map<number, StatType>;
   private users: Map<number, User>;
   
+  private currentTeamId: number;
   private currentPlayerId: number;
+  private currentFixtureId: number;
   private currentGameId: number;
   private currentGamePlayerId: number;
   private currentStatId: number;
@@ -82,14 +109,18 @@ export class MemStorage implements IStorage {
   private currentUserId: number;
 
   constructor() {
+    this.teams = new Map();
     this.players = new Map();
+    this.fixtures = new Map();
     this.games = new Map();
     this.gamePlayers = new Map();
     this.stats = new Map();
     this.statTypes = new Map();
     this.users = new Map();
     
+    this.currentTeamId = 1;
     this.currentPlayerId = 1;
+    this.currentFixtureId = 1;
     this.currentGameId = 1;
     this.currentGamePlayerId = 1;
     this.currentStatId = 1;
@@ -126,6 +157,78 @@ export class MemStorage implements IStorage {
     defaultStatTypes.forEach(statType => {
       this.createStatType(statType);
     });
+  }
+
+  // Team methods
+  async getTeam(id: number): Promise<Team | undefined> {
+    return this.teams.get(id);
+  }
+  
+  async getTeams(): Promise<Team[]> {
+    return Array.from(this.teams.values());
+  }
+  
+  async createTeam(insertTeam: InsertTeam): Promise<Team> {
+    const id = this.currentTeamId++;
+    const team: Team = { ...insertTeam, id };
+    this.teams.set(id, team);
+    return team;
+  }
+  
+  async updateTeam(id: number, team: Partial<InsertTeam>): Promise<Team | undefined> {
+    const existingTeam = this.teams.get(id);
+    if (!existingTeam) return undefined;
+    
+    const updatedTeam = { ...existingTeam, ...team };
+    this.teams.set(id, updatedTeam);
+    return updatedTeam;
+  }
+  
+  async deleteTeam(id: number): Promise<boolean> {
+    return this.teams.delete(id);
+  }
+
+  // Player methods with team-related additions
+  async getPlayersByTeam(teamId: number): Promise<Player[]> {
+    return Array.from(this.players.values()).filter(player => player.teamId === teamId);
+  }
+
+  // Fixture methods
+  async getFixture(id: number): Promise<Fixture | undefined> {
+    return this.fixtures.get(id);
+  }
+  
+  async getFixtures(): Promise<Fixture[]> {
+    return Array.from(this.fixtures.values());
+  }
+  
+  async getTeamFixtures(teamId: number): Promise<Fixture[]> {
+    return Array.from(this.fixtures.values()).filter(fixture => fixture.teamId === teamId);
+  }
+  
+  async createFixture(insertFixture: InsertFixture): Promise<Fixture> {
+    const id = this.currentFixtureId++;
+    const fixture: Fixture = { ...insertFixture, id };
+    this.fixtures.set(id, fixture);
+    return fixture;
+  }
+  
+  async updateFixture(id: number, fixture: Partial<InsertFixture>): Promise<Fixture | undefined> {
+    const existingFixture = this.fixtures.get(id);
+    if (!existingFixture) return undefined;
+    
+    const updatedFixture = { ...existingFixture, ...fixture };
+    this.fixtures.set(id, updatedFixture);
+    return updatedFixture;
+  }
+  
+  async deleteFixture(id: number): Promise<boolean> {
+    return this.fixtures.delete(id);
+  }
+  
+  // Game methods with team-related additions
+  async getTeamGames(teamId: number): Promise<Game[]> {
+    return Array.from(this.games.values()).filter(game => game.teamId === teamId);
   }
 
   // Player methods

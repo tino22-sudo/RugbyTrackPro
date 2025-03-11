@@ -2,12 +2,30 @@ import { pgTable, text, serial, integer, boolean, timestamp, json, real } from "
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Teams table
+export const teams = pgTable("teams", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  ageGroup: text("age_group").notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+});
+
+export const insertTeamSchema = createInsertSchema(teams).omit({ id: true });
+export type InsertTeam = z.infer<typeof insertTeamSchema>;
+export type Team = typeof teams.$inferSelect;
+
 // Players table
 export const players = pgTable("players", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   number: integer("number"),
   position: text("position"),
+  dateOfBirth: timestamp("date_of_birth"),
+  teamId: integer("team_id"), // Optional - players can be in the pool without a team
+  email: text("email"),
+  phone: text("phone"),
+  notes: text("notes"),
   isActive: boolean("is_active").default(true),
 });
 
@@ -15,9 +33,26 @@ export const insertPlayerSchema = createInsertSchema(players).omit({ id: true })
 export type InsertPlayer = z.infer<typeof insertPlayerSchema>;
 export type Player = typeof players.$inferSelect;
 
-// Games table
+// Fixtures table - upcoming games before they're played
+export const fixtures = pgTable("fixtures", {
+  id: serial("id").primaryKey(),
+  teamId: integer("team_id").notNull(),
+  opponent: text("opponent").notNull(),
+  date: timestamp("date").notNull(),
+  location: text("location").notNull(),
+  isHome: boolean("is_home").default(true),
+  notes: text("notes"),
+});
+
+export const insertFixtureSchema = createInsertSchema(fixtures).omit({ id: true });
+export type InsertFixture = z.infer<typeof insertFixtureSchema>;
+export type Fixture = typeof fixtures.$inferSelect;
+
+// Games table - actual played games with stats
 export const games = pgTable("games", {
   id: serial("id").primaryKey(),
+  teamId: integer("team_id").notNull(),
+  fixtureId: integer("fixture_id"), // Optional - games can be created without a fixture
   opponent: text("opponent").notNull(),
   date: timestamp("date").notNull().defaultNow(),
   location: text("location").notNull(),
