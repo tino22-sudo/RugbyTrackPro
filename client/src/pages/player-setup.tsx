@@ -21,6 +21,7 @@ export default function PlayerSetup() {
   const [positionSelections, setPositionSelections] = useState<Record<number, number>>({});
   const [selectedStats, setSelectedStats] = useState<Record<number, boolean>>({});
   const [customStat, setCustomStat] = useState('');
+  const [additionalSubstitutes, setAdditionalSubstitutes] = useState<Array<{ number: number, position: string }>>([]);
   
   // Fetch the game data
   const { data: game, isLoading: isLoadingGame } = useQuery<Game>({
@@ -50,44 +51,58 @@ export default function PlayerSetup() {
     }
   }, [statTypes]);
   
-  // Positions for rugby
+  // Positions for rugby league
   const rugbyPositions = [
-    // Forwards
-    { number: 1, position: "Loosehead Prop" },
-    { number: 2, position: "Hooker" },
-    { number: 3, position: "Tighthead Prop" },
-    { number: 4, position: "Lock" },
-    { number: 5, position: "Lock" },
-    { number: 6, position: "Blindside Flanker" },
-    { number: 7, position: "Openside Flanker" },
-    { number: 8, position: "Number 8" },
     // Backs
-    { number: 9, position: "Scrum Half" },
-    { number: 10, position: "Fly Half" },
-    { number: 11, position: "Left Wing" },
-    { number: 12, position: "Inside Center" },
-    { number: 13, position: "Outside Center" },
-    { number: 14, position: "Right Wing" },
-    { number: 15, position: "Fullback" },
+    { number: 1, position: "Fullback" },
+    { number: 2, position: "Right Wing" },
+    { number: 3, position: "Right Centre" },
+    { number: 4, position: "Left Centre" },
+    { number: 5, position: "Left Wing" },
+    { number: 6, position: "Stand Off" },
+    { number: 7, position: "Scrum Half / Half Back" },
+    // Forwards
+    { number: 8, position: "Prop" },
+    { number: 9, position: "Hooker" },
+    { number: 10, position: "Prop" },
+    { number: 11, position: "Second Row" },
+    { number: 12, position: "Second Row" },
+    { number: 13, position: "Loose Forward" },
     // Substitutes
+    { number: 14, position: "Substitute" },
+    { number: 15, position: "Substitute" },
     { number: 16, position: "Substitute" },
-    { number: 17, position: "Substitute" },
-    { number: 18, position: "Substitute" },
-    { number: 19, position: "Substitute" },
-    { number: 20, position: "Substitute" },
-    { number: 21, position: "Substitute" },
-    { number: 22, position: "Substitute" },
-    { number: 23, position: "Substitute" }
+    { number: 17, position: "Substitute" }
   ];
   
-  // Forwards (1-8)
-  const forwards = rugbyPositions.filter(p => p.number >= 1 && p.number <= 8);
+  // Forwards (8-13)
+  const forwards = rugbyPositions.filter(p => p.number >= 8 && p.number <= 13);
   
-  // Backs (9-15)
-  const backs = rugbyPositions.filter(p => p.number >= 9 && p.number <= 15);
+  // Backs (1-7)
+  const backs = rugbyPositions.filter(p => p.number >= 1 && p.number <= 7);
   
-  // Substitutes (16-23)
-  const substitutes = rugbyPositions.filter(p => p.number >= 16);
+  // Get the base substitutes (14-17)
+  const baseSubstitutes = rugbyPositions.filter(p => p.number >= 14);
+  
+  // All substitutes (including additional ones)
+  const substitutes = [...baseSubstitutes, ...additionalSubstitutes];
+  
+  // Add additional substitute
+  const handleAddSubstitute = () => {
+    // Find the highest existing number
+    const highestNumber = Math.max(
+      ...rugbyPositions.map(p => p.number),
+      ...additionalSubstitutes.map(p => p.number)
+    );
+    
+    // Create a new substitute with the next number
+    const newSubstitute = {
+      number: highestNumber + 1,
+      position: "Substitute"
+    };
+    
+    setAdditionalSubstitutes(prev => [...prev, newSubstitute]);
+  };
   
   // Handle position selection change
   const handlePositionChange = (positionNumber: number, playerId: number) => {
@@ -128,8 +143,12 @@ export default function PlayerSetup() {
     mutationFn: async () => {
       const playerAssignments = Object.entries(positionSelections).map(([posNumber, playerId]) => {
         const positionNumber = Number(posNumber);
-        const position = rugbyPositions.find(p => p.number === positionNumber)?.position || "Unknown";
-        const isStarter = positionNumber <= 15; // Players 1-15 are starters
+        
+        // Find position name from combined list of all positions
+        const allPositions = [...rugbyPositions, ...additionalSubstitutes];
+        const position = allPositions.find(p => p.number === positionNumber)?.position || "Unknown";
+        
+        const isStarter = positionNumber <= 13; // Players 1-13 are starters in rugby league
         
         return {
           playerId,
@@ -256,11 +275,11 @@ export default function PlayerSetup() {
             <h2 className="text-xl font-heading font-bold text-primary mb-4">Assign Players</h2>
             <p className="text-gray-600 mb-6">Assign players to positions for the starting lineup.</p>
             
-            <Tabs defaultValue="forwards">
+            <Tabs defaultValue="backs">
               <TabsList className="mb-4">
-                <TabsTrigger value="forwards">Forwards (1-8)</TabsTrigger>
-                <TabsTrigger value="backs">Backs (9-15)</TabsTrigger>
-                <TabsTrigger value="substitutes">Substitutes</TabsTrigger>
+                <TabsTrigger value="backs">Backs (1-7)</TabsTrigger>
+                <TabsTrigger value="forwards">Forwards (8-13)</TabsTrigger>
+                <TabsTrigger value="substitutes">Substitutes (14+)</TabsTrigger>
               </TabsList>
               
               <TabsContent value="forwards" className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -289,17 +308,32 @@ export default function PlayerSetup() {
                 ))}
               </TabsContent>
               
-              <TabsContent value="substitutes" className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {substitutes.map(pos => (
-                  <PlayerSelection
-                    key={pos.number}
-                    position={pos.position}
-                    positionNumber={pos.number}
-                    availablePlayers={players}
-                    onChange={handlePositionChange}
-                    selectedPlayerId={positionSelections[pos.number]}
-                  />
-                ))}
+              <TabsContent value="substitutes">
+                <div className="mb-4 flex justify-between items-center">
+                  <h3 className="text-lg font-semibold text-gray-700">Substitute Players</h3>
+                  <Button 
+                    onClick={handleAddSubstitute} 
+                    variant="outline" 
+                    className="flex items-center gap-1"
+                    size="sm"
+                  >
+                    <span className="material-icons text-sm">add</span>
+                    Add Substitute
+                  </Button>
+                </div>
+                
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {substitutes.map(pos => (
+                    <PlayerSelection
+                      key={pos.number}
+                      position={pos.position}
+                      positionNumber={pos.number}
+                      availablePlayers={players}
+                      onChange={handlePositionChange}
+                      selectedPlayerId={positionSelections[pos.number]}
+                    />
+                  ))}
+                </div>
               </TabsContent>
             </Tabs>
           </CardContent>
