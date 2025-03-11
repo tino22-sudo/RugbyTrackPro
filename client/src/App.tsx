@@ -10,6 +10,9 @@ import ActiveGame from "@/pages/active-game";
 import GameSummary from "@/pages/game-summary";
 import Dashboard from "@/pages/dashboard";
 import GameHistory from "@/pages/game-history";
+import TeamManagement from "@/pages/team-management";
+import PlayerPool from "@/pages/player-pool";
+import FixtureManagement from "@/pages/fixture-management";
 import NotFound from "@/pages/not-found";
 import MainLayout from "@/layouts/main-layout";
 
@@ -23,6 +26,9 @@ function Router() {
       <Route path="/game-summary/:gameId" component={GameSummary} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/game-history" component={GameHistory} />
+      <Route path="/team-management" component={TeamManagement} />
+      <Route path="/player-pool" component={PlayerPool} />
+      <Route path="/fixture-management" component={FixtureManagement} />
       <Route component={NotFound} />
     </Switch>
   );

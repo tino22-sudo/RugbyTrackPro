@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useLocation } from 'wouter';
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { GameCard } from '@/components/home/game-card';
 import { Game } from '@/types';
 import { RugbyField } from '@/components/ui/rugby-field';
+import { CalendarRange, Users, Clipboard, PlusCircle } from 'lucide-react';
 
 export default function Home() {
   const [, navigate] = useLocation();
