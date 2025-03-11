@@ -102,12 +102,25 @@ export class MemStorage implements IStorage {
   
   private initializeDefaultStatTypes() {
     const defaultStatTypes: InsertStatType[] = [
+      // General stats
       { name: "Tackles", description: "Successful tackles made", isActive: true, isDefault: true, color: "#2563EB", icon: "sports_kabaddi" },
       { name: "Carries", description: "Ball carries", isActive: true, isDefault: true, color: "#16A34A", icon: "directions_run" },
       { name: "Meters", description: "Meters gained", isActive: true, isDefault: true, color: "#CA8A04", icon: "straighten" },
-      { name: "Tries", description: "Tries scored", isActive: true, isDefault: true, color: "#9333EA", icon: "emoji_events" },
       { name: "Passes", description: "Successful passes made", isActive: true, isDefault: true, color: "#4F46E5", icon: "sports_handball" },
-      { name: "Lineouts", description: "Lineouts won", isActive: true, isDefault: true, color: "#DB2777", icon: "vertical_align_top" }
+      
+      // Scoring stats
+      { name: "Try", description: "Try scored (5 points)", isActive: true, isDefault: true, color: "#9333EA", icon: "emoji_events" },
+      { name: "Conversion", description: "Conversion kick (2 points)", isActive: true, isDefault: true, color: "#DC2626", icon: "sports_soccer" },
+      { name: "Penalty Goal", description: "Penalty kick (2 points)", isActive: true, isDefault: true, color: "#E11D48", icon: "gps_fixed" },
+      { name: "Field Goal", description: "Field goal (1 point)", isActive: true, isDefault: true, color: "#FB923C", icon: "sports" },
+      
+      // Discipline stats
+      { name: "Yellow Card", description: "Player sin-binned for 10 minutes", isActive: true, isDefault: true, color: "#FBBF24", icon: "credit_card" },
+      { name: "Red Card", description: "Player sent off for the remainder of the game", isActive: true, isDefault: true, color: "#B91C1C", icon: "credit_card" },
+      
+      // Errors and penalties
+      { name: "Penalty Conceded", description: "Penalty given away", isActive: true, isDefault: true, color: "#64748B", icon: "flag" },
+      { name: "Error", description: "Handling error or mistake", isActive: true, isDefault: true, color: "#94A3B8", icon: "error" }
     ];
     
     defaultStatTypes.forEach(statType => {
