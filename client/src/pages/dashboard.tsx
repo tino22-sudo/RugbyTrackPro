@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"; //Ensuring correct import
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Game, Player, Stat, PlayerStat } from '@/types';
@@ -43,8 +43,8 @@ export default function Dashboard() {
     const statsByPlayer: Record<number, Record<string, number>> = {};
 
     // Filter stats by selected game if not 'all'
-    const filteredStats = selectedGame === 'all' 
-      ? gameStats 
+    const filteredStats = selectedGame === 'all'
+      ? gameStats
       : gameStats.filter(stat => stat.gameId === Number(selectedGame));
 
     // Group stats by player and stat type
@@ -138,15 +138,15 @@ export default function Dashboard() {
           <h1 className="text-2xl font-heading font-bold text-primary">Team Dashboard</h1>
           <p className="text-sm text-gray-500">Analyze performance and statistics</p>
         </div>
-        <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex items-center"
-            onClick={() => window.location.href = '/'}
-          >
-            <span className="material-icons mr-1">arrow_back</span>
-            Back to Home
-          </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex items-center"
+          onClick={() => window.location.href = '/'}
+        >
+          <span className="material-icons mr-1">arrow_back</span>
+          Back to Home
+        </Button>
       </div>
 
       <div className="flex flex-col md:flex-row gap-4 mb-6">
