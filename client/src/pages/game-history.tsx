@@ -151,9 +151,9 @@ export default function GameHistory() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="Home">Home</SelectItem>
-                  <SelectItem value="Away">Away</SelectItem>
-                  <SelectItem value="Neutral">Neutral</SelectItem>
+                  <SelectItem value="home">Home</SelectItem>
+                  <SelectItem value="away">Away</SelectItem>
+                  <SelectItem value="neutral">Neutral</SelectItem>
                 </SelectContent>
               </Select>
             </div>
