@@ -29,6 +29,7 @@ export default function ActiveGame() {
   const [currentStatType, setCurrentStatType] = useState<StatType | null>(null);
   const [statValue, setStatValue] = useState<number>(1);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+  const [gameStats, setGameStats] = useState<Record<number, Record<string, number>>>({});
   
   // Timer state
   const [timerState, setTimerState] = useState<TimerState>({
@@ -70,7 +71,13 @@ export default function ActiveGame() {
   // Selected stat types only
   const activeStatTypes = statTypes.filter(st => st.isActive);
   
-  // Initialize timer when game data is loaded
+  // Fetch game stats for real-time display
+  const { data: gameStatData = [] } = useQuery<Stat[]>({
+    queryKey: [`/api/games/${gameId}/stats`],
+    enabled: !!gameId,
+  });
+  
+  // Initialize timer and stats when game data is loaded
   useEffect(() => {
     if (game) {
       setTimerState(prev => ({
@@ -81,6 +88,55 @@ export default function ActiveGame() {
       }));
     }
   }, [game]);
+  
+  // Process game stats data when it's loaded
+  useEffect(() => {
+    if (gameStatData.length > 0) {
+      // Process stats into the gameStats structure
+      const newGameStats: Record<number, Record<string, number>> = {};
+      
+      gameStatData.forEach(stat => {
+        // Initialize player stats object if it doesn't exist
+        if (!newGameStats[stat.playerId]) {
+          newGameStats[stat.playerId] = {};
+        }
+        
+        // Initialize stat type counter if it doesn't exist
+        if (!newGameStats[stat.playerId][stat.statType]) {
+          newGameStats[stat.playerId][stat.statType] = 0;
+        }
+        
+        // Add the stat value
+        newGameStats[stat.playerId][stat.statType] += stat.value;
+        
+        // Also add the most recent stats to the activity log
+        const player = gamePlayers.find(p => p.id === stat.playerId);
+        if (player) {
+          // Create an activity log entry
+          const activity: ActivityLog = {
+            id: stat.id, // Use stat ID for uniqueness
+            time: stat.gameTime || 0,
+            playerId: stat.playerId,
+            playerNumber: player.number,
+            playerName: player.name,
+            statType: stat.statType,
+            value: stat.value
+          };
+          
+          // Add to activity logs if not already present
+          setActivityLogs(prev => {
+            if (!prev.some(log => log.id === activity.id)) {
+              return [activity, ...prev].slice(0, 10); // Keep only the 10 most recent
+            }
+            return prev;
+          });
+        }
+      });
+      
+      // Update the game stats state
+      setGameStats(newGameStats);
+    }
+  }, [gameStatData, gamePlayers]);
   
   // Handle player selection
   const handlePlayerSelect = (player: PlayerWithPosition) => {
@@ -166,6 +222,26 @@ export default function ActiveGame() {
         
         // Add to the activity logs
         setActivityLogs(prev => [newActivity, ...prev].slice(0, 10)); // Keep only the 10 most recent
+        
+        // Update game stats for real-time display
+        setGameStats(prev => {
+          const newStats = {...prev};
+          
+          // Initialize player stats object if it doesn't exist
+          if (!newStats[player.id]) {
+            newStats[player.id] = {};
+          }
+          
+          // Initialize stat type counter if it doesn't exist
+          if (!newStats[player.id][variables.statType]) {
+            newStats[player.id][variables.statType] = 0;
+          }
+          
+          // Increment the stat value
+          newStats[player.id][variables.statType] += variables.value;
+          
+          return newStats;
+        });
       }
       
       toast({
@@ -320,10 +396,21 @@ export default function ActiveGame() {
                 player={player}
                 onClick={handlePlayerSelect}
                 isSelected={selectedPlayer?.id === player.id}
-                stat={player.id === selectedPlayer?.id ? { 
-                  type: "Tackles", 
-                  value: 0 // This would be calculated from actual stats in a full implementation
-                } : undefined}
+                stat={
+                  gameStats[player.id] 
+                    ? player.id === selectedPlayer?.id 
+                      ? { 
+                          type: "Try", 
+                          value: gameStats[player.id]?.['Try'] || 0 
+                        } 
+                      : { 
+                          type: gameStats[player.id]?.['Try'] > 0 ? "Try" : "Tackles", 
+                          value: gameStats[player.id]?.['Try'] > 0 
+                            ? gameStats[player.id]?.['Try'] 
+                            : (gameStats[player.id]?.['Tackles'] || 0)
+                        }
+                    : undefined
+                }
               />
             ))}
           </div>
@@ -345,26 +432,87 @@ export default function ActiveGame() {
                   </div>
                 </div>
                 
-                {/* TODO: Implement player stats overview here */}
+                {/* Player stats overview */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4">
+                  {/* General performance stats */}
                   <div className="bg-blue-50 rounded-md p-3">
-                    <div className="text-sm text-gray-600">Tackles</div>
-                    <div className="text-2xl font-bold text-blue-800">0</div>
+                    <div className="text-sm text-gray-600 flex items-center">
+                      <span className="material-icons text-blue-600 mr-1" style={{ fontSize: '16px' }}>sports_kabaddi</span>
+                      Tackles
+                    </div>
+                    <div className="text-2xl font-bold text-blue-800">
+                      {selectedPlayer && gameStats[selectedPlayer.id]?.['Tackles'] || 0}
+                    </div>
                   </div>
                   
                   <div className="bg-green-50 rounded-md p-3">
-                    <div className="text-sm text-gray-600">Carries</div>
-                    <div className="text-2xl font-bold text-green-800">0</div>
+                    <div className="text-sm text-gray-600 flex items-center">
+                      <span className="material-icons text-green-600 mr-1" style={{ fontSize: '16px' }}>directions_run</span>
+                      Carries
+                    </div>
+                    <div className="text-2xl font-bold text-green-800">
+                      {selectedPlayer && gameStats[selectedPlayer.id]?.['Carries'] || 0}
+                    </div>
                   </div>
                   
                   <div className="bg-yellow-50 rounded-md p-3">
-                    <div className="text-sm text-gray-600">Meters</div>
-                    <div className="text-2xl font-bold text-yellow-800">0</div>
+                    <div className="text-sm text-gray-600 flex items-center">
+                      <span className="material-icons text-yellow-600 mr-1" style={{ fontSize: '16px' }}>straighten</span>
+                      Meters
+                    </div>
+                    <div className="text-2xl font-bold text-yellow-800">
+                      {selectedPlayer && gameStats[selectedPlayer.id]?.['Meters'] || 0}
+                    </div>
                   </div>
                   
+                  {/* Scoring stats */}
                   <div className="bg-purple-50 rounded-md p-3">
-                    <div className="text-sm text-gray-600">Tries</div>
-                    <div className="text-2xl font-bold text-purple-800">0</div>
+                    <div className="text-sm text-gray-600 flex items-center">
+                      <span className="material-icons text-purple-600 mr-1" style={{ fontSize: '16px' }}>emoji_events</span>
+                      Tries
+                    </div>
+                    <div className="text-2xl font-bold text-purple-800">
+                      {selectedPlayer && gameStats[selectedPlayer.id]?.['Try'] || 0}
+                    </div>
+                  </div>
+                  
+                  <div className="bg-red-50 rounded-md p-3">
+                    <div className="text-sm text-gray-600 flex items-center">
+                      <span className="material-icons text-red-600 mr-1" style={{ fontSize: '16px' }}>sports_soccer</span>
+                      Kicks
+                    </div>
+                    <div className="text-2xl font-bold text-red-800">
+                      {selectedPlayer && (
+                        (gameStats[selectedPlayer.id]?.['Conversion'] || 0) + 
+                        (gameStats[selectedPlayer.id]?.['Penalty Goal'] || 0) + 
+                        (gameStats[selectedPlayer.id]?.['Field Goal'] || 0)
+                      ) || 0}
+                    </div>
+                  </div>
+                  
+                  {/* Discipline stats */}
+                  <div className="bg-red-50 rounded-md p-3">
+                    <div className="text-sm text-gray-600 flex items-center">
+                      <span className="material-icons text-red-600 mr-1" style={{ fontSize: '16px' }}>credit_card</span>
+                      Cards
+                    </div>
+                    <div className="text-2xl font-bold text-red-800">
+                      {selectedPlayer && (
+                        (gameStats[selectedPlayer.id]?.['Yellow Card'] || 0) + 
+                        (gameStats[selectedPlayer.id]?.['Red Card'] || 0)
+                      ) || 0}
+                    </div>
+                  </div>
+                  
+                  {/* Errors */}
+                  <div className="bg-gray-50 rounded-md p-3">
+                    <div className="text-sm text-gray-600 flex items-center">
+                      <span className="material-icons text-gray-600 mr-1" style={{ fontSize: '16px' }}>flag</span>
+                      Penalties
+                    </div>
+                    <div className="text-2xl font-bold text-gray-800">
+                      {selectedPlayer && gameStats[selectedPlayer.id]?.['Penalty Conceded'] || 0}
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -399,12 +547,34 @@ export default function ActiveGame() {
                 ) : (
                   activityLogs.map(activity => (
                     <div key={activity.id} className="flex items-center text-sm p-2 bg-gray-50 rounded-md">
-                      <span className="material-icons text-blue-600 mr-2">sports_kabaddi</span>
+                      {/* Get right icon for the stat type */}
+                      {activity.statType === "Try" && <span className="material-icons text-purple-600 mr-2">emoji_events</span>}
+                      {activity.statType === "Conversion" && <span className="material-icons text-red-600 mr-2">sports_soccer</span>}
+                      {activity.statType === "Penalty Goal" && <span className="material-icons text-red-700 mr-2">gps_fixed</span>}
+                      {activity.statType === "Field Goal" && <span className="material-icons text-orange-500 mr-2">sports</span>}
+                      {activity.statType === "Yellow Card" && <span className="material-icons text-yellow-500 mr-2">credit_card</span>}
+                      {activity.statType === "Red Card" && <span className="material-icons text-red-600 mr-2">credit_card</span>}
+                      {activity.statType === "Tackles" && <span className="material-icons text-blue-600 mr-2">sports_kabaddi</span>}
+                      {activity.statType === "Carries" && <span className="material-icons text-green-600 mr-2">directions_run</span>}
+                      {activity.statType === "Meters" && <span className="material-icons text-yellow-600 mr-2">straighten</span>}
+                      {activity.statType === "Passes" && <span className="material-icons text-indigo-600 mr-2">sports_handball</span>}
+                      {activity.statType === "Penalty Conceded" && <span className="material-icons text-gray-600 mr-2">flag</span>}
+                      {activity.statType === "Error" && <span className="material-icons text-gray-500 mr-2">error</span>}
+                      
                       <span className="font-medium mr-2">#{activity.playerNumber} {activity.playerName}</span>
                       <span>
-                        {activity.statType === "Meters" 
-                          ? `gained ${activity.value} meters` 
-                          : `made a ${activity.statType.toLowerCase()}`}
+                        {activity.statType === "Meters" && `gained ${activity.value} meters`}
+                        {activity.statType === "Try" && `scored a try (5 points)`}
+                        {activity.statType === "Conversion" && `kicked a conversion (2 points)`}
+                        {activity.statType === "Penalty Goal" && `kicked a penalty goal (2 points)`}
+                        {activity.statType === "Field Goal" && `kicked a field goal (1 point)`}
+                        {activity.statType === "Yellow Card" && `received a yellow card (sin bin)`}
+                        {activity.statType === "Red Card" && `received a red card (sent off)`}
+                        {activity.statType === "Tackles" && `made a tackle`}
+                        {activity.statType === "Carries" && `carried the ball`}
+                        {activity.statType === "Passes" && `completed a pass`}
+                        {activity.statType === "Penalty Conceded" && `conceded a penalty`}
+                        {activity.statType === "Error" && `made an error`}
                       </span>
                       <span className="ml-auto text-gray-500">{formatGameTime(activity.time)}</span>
                     </div>
