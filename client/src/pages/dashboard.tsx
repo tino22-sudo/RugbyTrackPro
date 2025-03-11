@@ -41,7 +41,7 @@ export default function Dashboard() {
     if (isLoadingGames || isLoadingPlayers || isLoadingGameStats) return [];
 
     const statsByPlayer: Record<number, Record<string, number>> = {};
-    
+
     // Filter stats by selected game if not 'all'
     const filteredStats = selectedGame === 'all' 
       ? gameStats 
@@ -52,18 +52,18 @@ export default function Dashboard() {
       if (!statsByPlayer[stat.playerId]) {
         statsByPlayer[stat.playerId] = {};
       }
-      
+
       if (!statsByPlayer[stat.playerId][stat.statType]) {
         statsByPlayer[stat.playerId][stat.statType] = 0;
       }
-      
+
       statsByPlayer[stat.playerId][stat.statType] += stat.value;
     });
 
     // Convert to array format with player information
     return Object.entries(statsByPlayer).map(([playerId, stats]) => {
       const player = players.find(p => p.id === Number(playerId));
-      
+
       // Filter by position if selected
       if (selectedPosition !== 'all') {
         const positionNumber = Number(playerId);
@@ -71,7 +71,7 @@ export default function Dashboard() {
         if (selectedPosition === 'backs' && (positionNumber < 9 || positionNumber > 15)) return null;
         if (selectedPosition === 'substitutes' && positionNumber <= 15) return null;
       }
-      
+
       return {
         playerId: Number(playerId),
         playerName: player?.name || 'Unknown Player',
@@ -85,7 +85,7 @@ export default function Dashboard() {
     if (isLoadingGames || isLoadingGameStats) return [];
 
     const statsByType: Record<string, number> = {};
-    
+
     // Filter stats by selected game if not 'all'
     const filteredStats = selectedGame === 'all'
       ? gameStats
@@ -111,7 +111,7 @@ export default function Dashboard() {
     if (isLoadingGames) return { wins: 0, losses: 0, draws: 0 };
 
     const completedGames = games.filter(game => game.isCompleted);
-    
+
     return completedGames.reduce((acc, game) => {
       if (game.homeScore > game.awayScore) acc.wins++;
       else if (game.homeScore < game.awayScore) acc.losses++;
@@ -138,12 +138,15 @@ export default function Dashboard() {
           <h1 className="text-2xl font-heading font-bold text-primary">Team Dashboard</h1>
           <p className="text-sm text-gray-500">Analyze performance and statistics</p>
         </div>
-        <Link href="/">
-          <Button variant="outline" size="sm" className="flex items-center">
+        <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center"
+            onClick={() => window.location.href = '/'}
+          >
             <span className="material-icons mr-1">arrow_back</span>
             Back to Home
           </Button>
-        </Link>
       </div>
 
       <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -170,7 +173,7 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className="flex-1">
           <CardContent className="p-4">
             <div className="flex justify-between items-center">
@@ -200,7 +203,7 @@ export default function Dashboard() {
           <TabsTrigger value="players">Player Stats</TabsTrigger>
           <TabsTrigger value="results">Game Results</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="team" className="space-y-4">
           <Card>
             <CardHeader>
@@ -225,7 +228,7 @@ export default function Dashboard() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-          
+
           <div className="grid md:grid-cols-2 gap-4">
             <Card>
               <CardHeader>
@@ -253,7 +256,7 @@ export default function Dashboard() {
                 </ResponsiveContainer>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader>
                 <CardTitle>Game Results</CardTitle>
@@ -279,7 +282,7 @@ export default function Dashboard() {
             </Card>
           </div>
         </TabsContent>
-        
+
         <TabsContent value="players" className="space-y-4">
           <Card>
             <CardHeader>
@@ -317,7 +320,7 @@ export default function Dashboard() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader>
               <CardTitle>Player Comparison</CardTitle>
@@ -347,7 +350,7 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="results" className="space-y-4">
           <Card>
             <CardHeader>
@@ -360,18 +363,18 @@ export default function Dashboard() {
                   <div className="text-sm text-gray-600">Wins</div>
                   <div className="text-3xl font-bold text-green-800">{gameResults.wins}</div>
                 </div>
-                
+
                 <div className="bg-red-50 rounded-md p-4 text-center">
                   <div className="text-sm text-gray-600">Losses</div>
                   <div className="text-3xl font-bold text-red-800">{gameResults.losses}</div>
                 </div>
-                
+
                 <div className="bg-gray-50 rounded-md p-4 text-center">
                   <div className="text-sm text-gray-600">Draws</div>
                   <div className="text-3xl font-bold text-gray-800">{gameResults.draws}</div>
                 </div>
               </div>
-              
+
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
@@ -390,7 +393,7 @@ export default function Dashboard() {
                       .map(game => {
                         let result = "Draw";
                         let resultClass = "text-gray-800";
-                        
+
                         if (game.homeScore > game.awayScore) {
                           result = "Win";
                           resultClass = "text-green-800";
@@ -398,7 +401,7 @@ export default function Dashboard() {
                           result = "Loss";
                           resultClass = "text-red-800";
                         }
-                        
+
                         return (
                           <tr key={game.id}>
                             <td className="px-3 py-2 whitespace-nowrap text-sm">

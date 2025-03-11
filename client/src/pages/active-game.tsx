@@ -355,7 +355,7 @@ export default function ActiveGame() {
                 variant="ghost" 
                 size="icon"
                 className="rounded-full hover:bg-primary-light"
-                onClick={() => navigate('/')}
+                onClick={() => window.location.href = '/'}
               >
                 <span className="material-icons">home</span>
               </Button>
