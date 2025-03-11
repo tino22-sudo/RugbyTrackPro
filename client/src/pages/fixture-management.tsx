@@ -70,7 +70,7 @@ type CreateGameFormValues = z.infer<typeof createGameSchema>;
 export default function FixtureManagement() {
   const [selectedFixture, setSelectedFixture] = useState<Fixture | null>(null);
   const [gameModalOpen, setGameModalOpen] = useState(false);
-  const navigate = useNavigate();
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   
   // Query to fetch all fixtures
