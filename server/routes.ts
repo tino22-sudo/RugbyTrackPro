@@ -118,15 +118,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   apiRouter.post("/games", async (req: Request, res: Response) => {
     try {
+      console.log('Game creation request body:', JSON.stringify(req.body));
       const validation = insertGameSchema.safeParse(req.body);
       
       if (!validation.success) {
+        console.error('Game validation error:', JSON.stringify(validation.error.format()));
         return res.status(400).json({ message: "Invalid game data", errors: validation.error.format() });
       }
       
       const game = await storage.createGame(validation.data);
       res.status(201).json(game);
     } catch (error) {
+      console.error('Game creation error:', error);
       res.status(500).json({ message: "Failed to create game" });
     }
   });
