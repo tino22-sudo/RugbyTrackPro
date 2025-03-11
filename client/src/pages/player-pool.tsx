@@ -69,10 +69,15 @@ const RUGBY_POSITIONS = [
   "Substitute",
 ];
 
+const ensureValidValue = (value: number | undefined): string => {
+  return value === undefined ? "none" : String(value);
+};
+
+
 export default function PlayerPool() {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   // Query to fetch all players
   const {
     data: players = [],
@@ -82,7 +87,7 @@ export default function PlayerPool() {
     queryKey: ['/api/players'],
     queryFn: getQueryFn({ on401: "throw" }),
   });
-  
+
   // Query to fetch all teams
   const {
     data: teams = [],
@@ -91,7 +96,7 @@ export default function PlayerPool() {
     queryKey: ['/api/teams'],
     queryFn: getQueryFn({ on401: "throw" }),
   });
-  
+
   // Form for adding/editing players
   const form = useForm<PlayerFormValues>({
     resolver: zodResolver(playerSchema),
@@ -106,13 +111,13 @@ export default function PlayerPool() {
       notes: "",
     },
   });
-  
+
   // Filter players based on search query
   const filteredPlayers = players.filter(player => 
     player.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (player.position && player.position.toLowerCase().includes(searchQuery.toLowerCase()))
   );
-  
+
   // Reset form when selected player changes
   useState(() => {
     if (selectedPlayer) {
@@ -139,7 +144,7 @@ export default function PlayerPool() {
       });
     }
   });
-  
+
   // Create player mutation
   const createPlayerMutation = useMutation({
     mutationFn: async (values: PlayerFormValues) => {
@@ -153,11 +158,11 @@ export default function PlayerPool() {
           isActive: true
         }),
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to create player');
       }
-      
+
       return await response.json();
     },
     onSuccess: () => {
@@ -165,7 +170,7 @@ export default function PlayerPool() {
       queryClient.invalidateQueries({ queryKey: ['/api/players'] });
     },
   });
-  
+
   // Update player mutation
   const updatePlayerMutation = useMutation({
     mutationFn: async ({ id, values }: { id: number, values: PlayerFormValues }) => {
@@ -176,11 +181,11 @@ export default function PlayerPool() {
         },
         body: JSON.stringify(values),
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to update player');
       }
-      
+
       return await response.json();
     },
     onSuccess: () => {
@@ -189,18 +194,18 @@ export default function PlayerPool() {
       queryClient.invalidateQueries({ queryKey: ['/api/players'] });
     },
   });
-  
+
   // Delete player mutation
   const deletePlayerMutation = useMutation({
     mutationFn: async (id: number) => {
       const response = await fetch(`/api/players/${id}`, {
         method: 'DELETE',
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to delete player');
       }
-      
+
       return true;
     },
     onSuccess: () => {
@@ -209,7 +214,7 @@ export default function PlayerPool() {
       queryClient.invalidateQueries({ queryKey: ['/api/players'] });
     },
   });
-  
+
   function onPlayerSubmit(values: PlayerFormValues) {
     if (selectedPlayer) {
       updatePlayerMutation.mutate({ id: selectedPlayer.id, values });
@@ -217,23 +222,23 @@ export default function PlayerPool() {
       createPlayerMutation.mutate(values);
     }
   }
-  
+
   function handleDeletePlayer(id: number) {
     if (confirm("Are you sure you want to delete this player?")) {
       deletePlayerMutation.mutate(id);
     }
   }
-  
+
   function getTeamName(teamId: number | undefined) {
     if (!teamId) return "Unassigned";
     const team = teams.find(t => t.id === teamId);
     return team ? team.name : "Unknown Team";
   }
-  
+
   return (
     <div className="container mx-auto py-6">
       <h1 className="text-3xl font-bold mb-6">Player Pool</h1>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Players List */}
         <div className="col-span-1 space-y-4">
@@ -241,7 +246,7 @@ export default function PlayerPool() {
             <CardHeader>
               <CardTitle>Players</CardTitle>
               <CardDescription>All players in your club</CardDescription>
-              
+
               <div className="relative mt-2">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -252,7 +257,7 @@ export default function PlayerPool() {
                 />
               </div>
             </CardHeader>
-            
+
             <CardContent className="max-h-[500px] overflow-y-auto">
               {playersLoading ? (
                 <p>Loading players...</p>
@@ -307,7 +312,7 @@ export default function PlayerPool() {
                 </ul>
               )}
             </CardContent>
-            
+
             <CardFooter>
               <Button
                 variant="outline"
@@ -332,7 +337,7 @@ export default function PlayerPool() {
             </CardFooter>
           </Card>
         </div>
-        
+
         {/* Player Form */}
         <div className="col-span-1 md:col-span-2">
           <Card>
@@ -345,7 +350,7 @@ export default function PlayerPool() {
                 }
               </CardDescription>
             </CardHeader>
-            
+
             <CardContent>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onPlayerSubmit)} className="space-y-4">
@@ -363,7 +368,7 @@ export default function PlayerPool() {
                         </FormItem>
                       )}
                     />
-                    
+
                     <FormField
                       control={form.control}
                       name="number"
@@ -387,7 +392,7 @@ export default function PlayerPool() {
                       )}
                     />
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
@@ -417,39 +422,38 @@ export default function PlayerPool() {
                         </FormItem>
                       )}
                     />
-                    
+
                     <FormField
                       control={form.control}
                       name="teamId"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Team</FormLabel>
-                          <Select
-                            onValueChange={(value) => field.onChange(Number(value))}
-                            defaultValue={field.value?.toString()}
-                            value={field.value?.toString()}
-                          >
-                            <FormControl>
+                          <FormControl>
+                            <Select
+                              value={ensureValidValue(field.value)}
+                              onValueChange={(value) => field.onChange(value === "none" ? undefined : Number(value))}
+                            >
                               <SelectTrigger>
-                                <SelectValue placeholder="Assign to team" />
+                                <SelectValue placeholder="Select team" />
                               </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="">Unassigned</SelectItem>
-                              {teams.map(team => (
-                                <SelectItem key={team.id} value={team.id.toString()}>
-                                  {team.name} ({team.ageGroup})
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                              <SelectContent>
+                                <SelectItem value="none">No Team Selected</SelectItem>
+                                {teams.map((team) => (
+                                  <SelectItem key={team.id} value={String(team.id)}>
+                                    {team.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
                           <FormDescription>Assign player to a team</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
                   </div>
-                  
+
                   <FormField
                     control={form.control}
                     name="dateOfBirth"
@@ -493,7 +497,7 @@ export default function PlayerPool() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
@@ -508,7 +512,7 @@ export default function PlayerPool() {
                         </FormItem>
                       )}
                     />
-                    
+
                     <FormField
                       control={form.control}
                       name="phone"
@@ -523,7 +527,7 @@ export default function PlayerPool() {
                       )}
                     />
                   </div>
-                  
+
                   <FormField
                     control={form.control}
                     name="notes"
@@ -537,7 +541,7 @@ export default function PlayerPool() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <div className="flex gap-2 pt-4">
                     <Button 
                       type="submit" 
@@ -546,7 +550,7 @@ export default function PlayerPool() {
                     >
                       {selectedPlayer ? "Update Player" : "Add Player"}
                     </Button>
-                    
+
                     {selectedPlayer && (
                       <Button 
                         type="button" 

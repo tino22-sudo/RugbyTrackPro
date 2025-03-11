@@ -10,35 +10,36 @@ import { apiRequest } from '@/lib/queryClient';
 import { queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Game, Player, StatType } from '@/types';
-import { PlayerSelection } from '@/components/game/player-selection';
+// Assuming PlayerSelection structure based on context
+import { Select } from '@chakra-ui/react'; // Or your Select component library
 
 export default function PlayerSetup() {
   const params = useParams();
   const gameId = Number(params.gameId);
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  
+
   const [positionSelections, setPositionSelections] = useState<Record<number, number>>({});
   const [selectedStats, setSelectedStats] = useState<Record<number, boolean>>({});
   const [customStat, setCustomStat] = useState('');
   const [additionalSubstitutes, setAdditionalSubstitutes] = useState<Array<{ number: number, position: string }>>([]);
-  
+
   // Fetch the game data
   const { data: game, isLoading: isLoadingGame } = useQuery<Game>({
     queryKey: [`/api/games/${gameId}`],
     enabled: !!gameId,
   });
-  
+
   // Fetch all players
   const { data: players = [], isLoading: isLoadingPlayers } = useQuery<Player[]>({
     queryKey: ['/api/players'],
   });
-  
+
   // Fetch stat types
   const { data: statTypes = [], isLoading: isLoadingStatTypes } = useQuery<StatType[]>({
     queryKey: ['/api/stat-types'],
   });
-  
+
   // Initialize selected stats based on defaults
   useEffect(() => {
     if (statTypes.length > 0) {
@@ -46,11 +47,11 @@ export default function PlayerSetup() {
         acc[statType.id] = statType.isDefault;
         return acc;
       }, {} as Record<number, boolean>);
-      
+
       setSelectedStats(initialStatSelections);
     }
   }, [statTypes]);
-  
+
   // Positions for rugby league
   const rugbyPositions = [
     // Backs
@@ -74,19 +75,19 @@ export default function PlayerSetup() {
     { number: 16, position: "Substitute" },
     { number: 17, position: "Substitute" }
   ];
-  
+
   // Forwards (8-13)
   const forwards = rugbyPositions.filter(p => p.number >= 8 && p.number <= 13);
-  
+
   // Backs (1-7)
   const backs = rugbyPositions.filter(p => p.number >= 1 && p.number <= 7);
-  
+
   // Get the base substitutes (14-17)
   const baseSubstitutes = rugbyPositions.filter(p => p.number >= 14);
-  
+
   // All substitutes (including additional ones)
   const substitutes = [...baseSubstitutes, ...additionalSubstitutes];
-  
+
   // Add additional substitute
   const handleAddSubstitute = () => {
     // Find the highest existing number
@@ -94,16 +95,16 @@ export default function PlayerSetup() {
       ...rugbyPositions.map(p => p.number),
       ...additionalSubstitutes.map(p => p.number)
     );
-    
+
     // Create a new substitute with the next number
     const newSubstitute = {
       number: highestNumber + 1,
       position: "Substitute"
     };
-    
+
     setAdditionalSubstitutes(prev => [...prev, newSubstitute]);
   };
-  
+
   // Handle position selection change
   const handlePositionChange = (positionNumber: number, playerId: number) => {
     setPositionSelections(prev => ({
@@ -111,7 +112,7 @@ export default function PlayerSetup() {
       [positionNumber]: playerId
     }));
   };
-  
+
   // Handle stat selection change
   const handleStatChange = (statId: number, checked: boolean) => {
     setSelectedStats(prev => ({
@@ -119,11 +120,11 @@ export default function PlayerSetup() {
       [statId]: checked
     }));
   };
-  
+
   // Handle adding a custom stat
   const handleAddCustomStat = () => {
     if (customStat.trim() === '') return;
-    
+
     // Create a new stat type
     const newStatType: Omit<StatType, 'id'> = {
       name: customStat,
@@ -133,23 +134,23 @@ export default function PlayerSetup() {
       color: '#1E3A8A', // Default primary color
       icon: 'sports_rugby'
     };
-    
+
     // Call API to create the new stat type
     createStatTypeMutation.mutate(newStatType);
   };
-  
+
   // Create game players mutation
   const savePlayersMutation = useMutation({
     mutationFn: async () => {
       const playerAssignments = Object.entries(positionSelections).map(([posNumber, playerId]) => {
         const positionNumber = Number(posNumber);
-        
+
         // Find position name from combined list of all positions
         const allPositions = [...rugbyPositions, ...additionalSubstitutes];
         const position = allPositions.find(p => p.number === positionNumber)?.position || "Unknown";
-        
+
         const isStarter = positionNumber <= 13; // Players 1-13 are starters in rugby league
-        
+
         return {
           playerId,
           number: positionNumber,
@@ -158,15 +159,15 @@ export default function PlayerSetup() {
           gameId, // This will be sent in the URL
         };
       });
-      
+
       // Only create players that have been assigned
       const validPlayerAssignments = playerAssignments.filter(p => p.playerId > 0);
-      
+
       // Make API calls to create each game player
       const promises = validPlayerAssignments.map(assignment => 
         apiRequest('POST', `/api/games/${gameId}/players`, assignment)
       );
-      
+
       return Promise.all(promises);
     },
     onSuccess: () => {
@@ -175,7 +176,7 @@ export default function PlayerSetup() {
         title: "Players Assigned",
         description: "Player positions have been successfully assigned.",
       });
-      
+
       // Navigate to the active game page
       navigate(`/active-game/${gameId}`);
     },
@@ -187,7 +188,7 @@ export default function PlayerSetup() {
       });
     }
   });
-  
+
   // Create stat type mutation
   const createStatTypeMutation = useMutation({
     mutationFn: (statType: Omit<StatType, 'id'>) => {
@@ -214,18 +215,18 @@ export default function PlayerSetup() {
       });
     }
   });
-  
+
   // Handle start game
   const handleStartGame = () => {
     // Save player assignments first
     savePlayersMutation.mutate();
   };
-  
+
   // Handle back button
   const handleBack = () => {
     navigate(`/new-game`);
   };
-  
+
   if (isLoadingGame || isLoadingPlayers || isLoadingStatTypes) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -233,7 +234,7 @@ export default function PlayerSetup() {
       </div>
     );
   }
-  
+
   if (!game) {
     return (
       <div className="container mx-auto p-4">
@@ -246,7 +247,7 @@ export default function PlayerSetup() {
       </div>
     );
   }
-  
+
   return (
     <div className="container mx-auto p-4">
       <div className="mb-6">
@@ -267,21 +268,21 @@ export default function PlayerSetup() {
           </Button>
         </div>
       </div>
-      
+
       <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-1">
         {/* Position Assignment Section */}
         <Card>
           <CardContent className="p-6">
             <h2 className="text-xl font-heading font-bold text-primary mb-4">Assign Players</h2>
             <p className="text-gray-600 mb-6">Assign players to positions for the starting lineup.</p>
-            
+
             <Tabs defaultValue="backs">
               <TabsList className="mb-4">
                 <TabsTrigger value="backs">Backs (1-7)</TabsTrigger>
                 <TabsTrigger value="forwards">Forwards (8-13)</TabsTrigger>
                 <TabsTrigger value="substitutes">Substitutes (14+)</TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="forwards" className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {forwards.map(pos => (
                   <PlayerSelection
@@ -294,7 +295,7 @@ export default function PlayerSetup() {
                   />
                 ))}
               </TabsContent>
-              
+
               <TabsContent value="backs" className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {backs.map(pos => (
                   <PlayerSelection
@@ -307,7 +308,7 @@ export default function PlayerSetup() {
                   />
                 ))}
               </TabsContent>
-              
+
               <TabsContent value="substitutes">
                 <div className="mb-4 flex justify-between items-center">
                   <h3 className="text-lg font-semibold text-gray-700">Substitute Players</h3>
@@ -321,7 +322,7 @@ export default function PlayerSetup() {
                     Add Substitute
                   </Button>
                 </div>
-                
+
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {substitutes.map(pos => (
                     <PlayerSelection
@@ -338,13 +339,13 @@ export default function PlayerSetup() {
             </Tabs>
           </CardContent>
         </Card>
-        
+
         {/* Stats to Track Section */}
         <Card>
           <CardContent className="p-6">
             <h2 className="text-xl font-heading font-bold text-primary mb-3">Stats to Track</h2>
             <p className="text-gray-600 mb-4">Select which stats to track during this game.</p>
-            
+
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
               {statTypes.map(statType => (
                 <div key={statType.id} className="flex items-center">
@@ -359,7 +360,7 @@ export default function PlayerSetup() {
                 </div>
               ))}
             </div>
-            
+
             {/* Custom stat input */}
             <div className="mt-6 flex gap-3 items-center">
               <Checkbox 
@@ -387,7 +388,7 @@ export default function PlayerSetup() {
             </div>
           </CardContent>
         </Card>
-        
+
         {/* Action buttons */}
         <div className="mt-4 flex justify-end space-x-4">
           <Button 
