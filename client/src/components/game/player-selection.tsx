@@ -41,7 +41,6 @@ export function PlayerSelection({
             <SelectValue placeholder="Select player..." />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Select player...</SelectItem>
             {availablePlayers.map((player) => (
               <SelectItem key={player.id} value={player.id.toString()}>
                 {player.name}
