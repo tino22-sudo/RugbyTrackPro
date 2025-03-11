@@ -134,9 +134,9 @@ export default function Home() {
                   <CardHeader>
                     <div className="flex justify-between items-center">
                       <CardTitle>Recent Games</CardTitle>
-                      <Link href="/game-history" className="text-primary-light hover:text-primary-dark transition-colors text-sm font-semibold">
+                      <span className="text-primary-light hover:text-primary-dark transition-colors text-sm font-semibold cursor-pointer" onClick={() => window.location.href = "/game-history"}>
                         View All
-                      </Link>
+                      </span>
                     </div>
                     <CardDescription>Latest game results</CardDescription>
                   </CardHeader>

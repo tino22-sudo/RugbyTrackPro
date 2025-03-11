@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
@@ -32,13 +31,13 @@ export function MainLayout({ children }: MainLayoutProps) {
           </nav>
         </div>
       </header>
-      
+
       <main className="flex-1">
         <div className="container mx-auto px-4 py-6">
           {children}
         </div>
       </main>
-      
+
       <footer className="border-t py-6">
         <div className="container mx-auto px-4 text-center text-sm text-gray-500">
           &copy; {new Date().getFullYear()} Team Manager App
