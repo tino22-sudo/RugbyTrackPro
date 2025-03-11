@@ -36,11 +36,12 @@ export function PlayerSelection({
       </div>
       
       <div className="flex items-center mt-1">
-        <Select onValueChange={handleChange} value={selectedPlayerId?.toString() || ""}>
+        <Select onValueChange={handleChange} value={selectedPlayerId?.toString() || undefined}>
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Select player..." />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="none" disabled>Select a player</SelectItem>
             {availablePlayers.map((player) => (
               <SelectItem key={player.id} value={player.id.toString()}>
                 {player.name}
