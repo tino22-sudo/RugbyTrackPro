@@ -119,7 +119,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   apiRouter.post("/games", async (req: Request, res: Response) => {
     try {
       console.log('Game creation request body:', JSON.stringify(req.body));
-      const validation = insertGameSchema.safeParse(req.body);
+      
+      // Create a custom validation schema that handles the date as a string
+      const gameCreateSchema = z.object({
+        opponent: z.string(),
+        location: z.string(),
+        date: z.string().transform(val => new Date(val)),
+        halfLength: z.number(),
+        numberOfHalves: z.number()
+      });
+      
+      const validation = gameCreateSchema.safeParse(req.body);
       
       if (!validation.success) {
         console.error('Game validation error:', JSON.stringify(validation.error.format()));
