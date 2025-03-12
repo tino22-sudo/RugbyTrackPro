@@ -5,6 +5,7 @@ import type { Express } from "express";
 import path from "path";
 import fs from "fs";
 import { nanoid } from "nanoid";
+import express from "express";
 import viteConfig from "../vite.config";
 
 const viteLogger = createLogger();
@@ -48,6 +49,9 @@ export async function setupVite(app: Express, server: Server) {
     const url = req.originalUrl;
 
     try {
+      // Using import.meta.url to get the current file's directory in ESM
+      const __filename = new URL(import.meta.url).pathname;
+      const __dirname = path.dirname(__filename);
       const clientTemplate = path.resolve(
         __dirname,
         "..",
@@ -71,6 +75,9 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
+  // Using import.meta.url to get the current file's directory in ESM
+  const __filename = new URL(import.meta.url).pathname;
+  const __dirname = path.dirname(__filename);
   const staticDir = path.resolve(__dirname, "..", "dist");
   app.use(express.static(staticDir));
   app.get("*", (req, res) => {
