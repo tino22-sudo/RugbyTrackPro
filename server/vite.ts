@@ -1,6 +1,6 @@
 import { createServer, type Server } from "http";
 import { createLogger } from "vite";
-import { createViteServer } from "@replit/vite-plugin-runtime-error-modal";
+import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 import type { Express } from "express";
 import path from "path";
 import fs from "fs";
@@ -27,18 +27,20 @@ export async function setupVite(app: Express, server: Server) {
     allowedHosts: true,
   };
 
-  const vite = await createViteServer({
-    ...viteConfig,
-    configFile: false,
-    customLogger: {
-      ...viteLogger,
-      error: (msg, options) => {
-        viteLogger.error(msg, options);
-        process.exit(1);
+  const vite = await import("vite").then((viteModule) => {
+    return viteModule.createServer({
+      ...viteConfig,
+      configFile: false,
+      customLogger: {
+        ...viteLogger,
+        error: (msg, options) => {
+          viteLogger.error(msg, options);
+          process.exit(1);
+        },
       },
-    },
-    server: serverOptions,
-    appType: "custom",
+      server: serverOptions,
+      appType: "custom",
+    });
   });
 
   app.use(vite.middlewares);
