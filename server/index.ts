@@ -1,14 +1,27 @@
 import express, { type Request, Response, NextFunction } from "express";
+import path from "path";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import { setupVite, log } from "./vite";
 
 const app = express();
+
+// Resolve publicPath dynamically based on environment
+const publicPath =
+  process.env.NODE_ENV === "production"
+    ? path.resolve(process.cwd(), "dist/public") // Use process.cwd() in production
+    : path.resolve(__dirname, "../dist/public"); // Use __dirname in development
+
+console.log("Serving static files from:", publicPath); // Debug log
+
+// Middleware to serve static files
+app.use(express.static(publicPath));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Logging middleware for API requests
 app.use((req, res, next) => {
   const start = Date.now();
-  const path = req.path;
+  const requestPath = req.path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
   const originalResJson = res.json;
@@ -19,8 +32,8 @@ app.use((req, res, next) => {
 
   res.on("finish", () => {
     const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+    if (requestPath.startsWith("/api")) {
+      let logLine = `${req.method} ${requestPath} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
@@ -37,33 +50,44 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Register API routes
   const server = await registerRoutes(app);
 
+  // Error handling middleware
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
     res.status(status).json({ message });
-    throw err;
+    log(`Error: ${message} (Status: ${status})`);
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
+  // Serve static files and fallback to index.html in production
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
-    serveStatic(app);
+    // Serve static files from dist/public
+    app.use(express.static(publicPath));
+
+    // Fallback to index.html for SPA routing
+    app.get("*", (req, res) => {
+      console.log("Fallback route triggered for:", req.path); // Debug log
+      const resolvedPath = path.resolve(publicPath, "index.html"); // Corrected path
+      console.log("Resolved path for index.html:", resolvedPath); // Debug log
+      res.sendFile(resolvedPath);
+    });
   }
 
-  // Serve the app on port 5000
-  // this serves both the API and the client
+  // Start the server
   const port = 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-  });
+  server.listen(
+    {
+      port,
+      host: "0.0.0.0",
+      reusePort: true,
+    },
+    () => {
+      log(`Server running on http://localhost:${port}`);
+    }
+  );
 })();
